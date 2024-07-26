@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthenticationController extends Controller
 {
@@ -35,7 +38,7 @@ class AuthenticationController extends Controller
             return response()->json([
                 'metadata' => [
                     'status' => 422,
-                    'message' => 'Validation error'
+                    'message' => 'Missing required fields or validation error',
                 ],
             ], 422);
         }
@@ -116,7 +119,6 @@ class AuthenticationController extends Controller
             ], 401);
         }
 
-        // If all checks pass, delete the token
         $token->delete();
 
         // Return a 200 OK response with a message indicating that the logout was successful
@@ -126,5 +128,110 @@ class AuthenticationController extends Controller
                 'message' => 'Logout successful'
             ],
         ]);
+    }
+
+    public function signup(Request $request) : JsonResponse {
+        $validate = Validator::make($request->all(), [
+            'name' => 'required|max:255',
+            'email' => 'required|email|max:255|unique:users',
+            'password' => 'required|min:6'
+        ]);
+
+        if ($validate->fails()) {
+            $errors = $validate->errors();
+            $msg = 'Missing required fields or validation error';
+
+            if ($errors->has('email')) {
+                $msg = $errors->first('email');
+            }
+
+            return response()->json([
+                'metadata' => [
+                    'status' => 422,
+                    'message' => msg,
+                ],
+            ], 422);
+        }
+
+        $user = User::create([
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'password' => bcrypt($request->input('password'))
+        ]);
+
+        $token = $user->createToken('authToken')->plainTextToken;
+
+        return response()->json([
+            'metadata' => [
+                'status' => 201,
+                'message' => 'User created'
+            ],
+            'data' => [
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user
+            ]
+        ], 201);
+    }
+
+    public function user(int $id = null) : JsonResponse {
+        if ($id === null) {
+            $user = auth()->user();
+        } else {
+            $user = User::find($id);
+        }
+
+        if ($user === null) {
+            return response()->json([
+                'metadata' => [
+                    'status' => 404,
+                    'message' => 'User not found'
+                ],
+            ], 404);
+        }
+
+        return response()->json([
+            'metadata' => [
+                'status' => 200,
+                'message' => 'User found'
+            ],
+            'data' => $user
+        ], 200);
+    }
+
+    public function redirectDriver($driver){
+        return Socialite::driver($driver)->stateless()->redirect();
+    }
+
+    public function driverCallback($driver) {
+        try {
+                $socialUser = Socialite::driver($driver)->stateless()->user();
+
+                // Check if user exists in our database
+                $user = User::where('email', $socialUser->getEmail())->first();
+
+                if (!$user) {
+                    // User doesn't exist, so create a new one
+                    $user = User::create([
+                        'name' => $socialUser->getName(),
+                        'email' => $socialUser->getEmail(),
+                        'password' => Hash::make(Str::random(16)), // Random password as it's not used for social login
+                        $driver . '_id' => $socialUser->getId(),
+                    ]);
+                }
+
+                // Generate or regenerate token
+                $token = $user->createToken('auth_token')->plainTextToken;
+
+                // Encode token for URL
+                $encodedToken = urlencode($token);
+
+                // Redirect to app with token
+                return redirect("craftmate://auth?token={$encodedToken}");
+
+            } catch (\Exception $e) {
+                // Handle any exceptions (e.g., network issues, API errors)
+                return redirect("craftmate://auth?error=" . urlencode($e->getMessage()));
+            }
     }
 }
