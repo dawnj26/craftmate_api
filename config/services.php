@@ -38,6 +38,12 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => 'https://e86c-110-54-233-77.ngrok-free.app/api/auth/google/callback',
+        'redirect' => 'https://moved-wasp-willingly.ngrok-free.app/api/auth/google/callback',
+    ],
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => 'https://moved-wasp-willingly.ngrok-free.app/api/auth/facebook/callback',
     ],
 ];
