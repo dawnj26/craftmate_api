@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ResetPasswordOTPSent;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,10 +12,11 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Socialite\Facades\Socialite;
+use Ichtrojan\Otp\Otp;
+use Illuminate\Support\Facades\Mail;
 
 class AuthenticationController extends Controller
 {
-
     /**
     * Handles user login.
     *
@@ -27,7 +30,8 @@ class AuthenticationController extends Controller
     * @param Request $request The incoming HTTP request.
     * @return JsonResponse The JSON response to the client.
     */
-    public function login(Request $request) : JsonResponse {
+    public function login(Request $request): JsonResponse
+    {
         $validate = Validator::make($request->all(), [
             'email' => 'required|email|max:255',
             'password' => 'required'
@@ -82,7 +86,8 @@ class AuthenticationController extends Controller
     * @param Request $request The incoming HTTP request.
     * @return JsonResponse The outgoing HTTP response.
     */
-    public function logout(Request $request) : JsonResponse {
+    public function logout(Request $request): JsonResponse
+    {
         // Get the bearer token from the request
         $tokenString = $request->bearerToken();
 
@@ -130,7 +135,8 @@ class AuthenticationController extends Controller
         ]);
     }
 
-    public function signup(Request $request) : JsonResponse {
+    public function signup(Request $request): JsonResponse
+    {
         $validate = Validator::make($request->all(), [
             'name' => 'required|max:255',
             'email' => 'required|email|max:255|unique:users',
@@ -148,7 +154,7 @@ class AuthenticationController extends Controller
             return response()->json([
                 'metadata' => [
                     'status' => 422,
-                    'message' => msg,
+                    'message' => $msg,
                 ],
             ], 422);
         }
@@ -174,7 +180,8 @@ class AuthenticationController extends Controller
         ], 201);
     }
 
-    public function user(int $id = null) : JsonResponse {
+    public function user(int $id = null): JsonResponse
+    {
         if ($id === null) {
             $user = auth()->user();
         } else {
@@ -199,39 +206,90 @@ class AuthenticationController extends Controller
         ], 200);
     }
 
-    public function redirectDriver($driver){
+    public function redirectDriver($driver)
+    {
         return Socialite::driver($driver)->stateless()->redirect();
     }
 
-    public function driverCallback($driver) {
+    public function driverCallback($driver)
+    {
         try {
-                $socialUser = Socialite::driver($driver)->stateless()->user();
+            $socialUser = Socialite::driver($driver)->stateless()->user();
 
-                // Check if user exists in our database
-                $user = User::where('email', $socialUser->getEmail())->first();
+            // Check if user exists in our database
+            $user = User::where('email', $socialUser->getEmail())->first();
 
-                if (!$user) {
-                    // User doesn't exist, so create a new one
-                    $user = User::create([
-                        'name' => $socialUser->getName(),
-                        'email' => $socialUser->getEmail(),
-                        'password' => Hash::make(Str::random(16)), // Random password as it's not used for social login
-                        $driver . '_id' => $socialUser->getId(),
-                    ]);
-                }
+            $email = $socialUser->getEmail();
 
-                // Generate or regenerate token
-                $token = $user->createToken('auth_token')->plainTextToken;
-
-                // Encode token for URL
-                $encodedToken = urlencode($token);
-
-                // Redirect to app with token
-                return redirect("craftmate://auth?token={$encodedToken}");
-
-            } catch (\Exception $e) {
-                // Handle any exceptions (e.g., network issues, API errors)
-                return redirect("craftmate://auth?error=" . urlencode($e->getMessage()));
+            // Check if the account has an email
+            if (!$email || empty($email)) {
+                throw new Exception('Email not found');
             }
+
+            if (!$user) {
+                // User doesn't exist, so create a new one
+                $user = User::create([
+                    'name' => $socialUser->getName(),
+                    'email' => $email,
+                    'password' => Hash::make(Str::random(16)), // Random password as it's not used for social login
+                    $driver . '_id' => $socialUser->getId(),
+                ]);
+            } else {
+                $user->update([
+                    $driver . '_id' =>$socialUser->getId(),
+                ]);
+            }
+
+            // Generate or regenerate token
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // Encode token for URL
+            $encodedToken = urlencode($token);
+
+            // Redirect to app with token
+            return response('', 302)->header('Location', "craftmate://?token={$encodedToken}");
+            // return redirect("craftmate://?token={$encodedToken}");
+
+        } catch (\Exception $e) {
+            // Handle any exceptions (e.g., network issues, API errors)
+            $message = $e->getMessage();
+            return response('', 302)->header('Location', "craftmate://?error={$message}");
+        }
+    }
+
+    public function sendOtp(Request $request) {
+        $validate = Validator::make($request->all(), [
+            'email' => 'required|email|max:255',
+        ]);
+
+        if ($validate->fails()) {
+            return response()->json([
+                'metadata' => [
+                    'status' => 422,
+                    'message' => 'Missing required fields',
+                ],
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'metadata' => [
+                    'status' => 404,
+                    'message' => 'User not found'
+                ],
+            ], 404);
+        }
+
+        $otp = (new Otp)->generate($user->email, 'numeric', 6, 15);
+
+        Mail::to($user->email)->send(new ResetPasswordOTPSent($otp->token, $user->name));
+        return response()->json([
+            'metadata' => [
+                'status' => 200,
+                'message' => 'Email sent',
+            ],
+        ], 200);
     }
 }
