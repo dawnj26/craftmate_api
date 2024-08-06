@@ -31,13 +31,11 @@
 
             <div class="my-4">
                 <p>Your OTP:</p>
-                <p class="text-4xl font-bold">{{ $otp }}</p>
+                <h3 class="text-4xl font-bold">{{ $otp }}</h3>
             </div>
 
             <p>
-                Please enter this OTP on the password reset page to verify your identity. This OTP is valid for the next
-                15
-                minutes.
+                Please enter this OTP on the password reset page to verify your identity. This OTP is valid for the next 5 minutes.
             </p>
             <p>
                 If you did not request a password reset, please ignore this email or contact our support team
