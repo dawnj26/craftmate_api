@@ -11,7 +11,7 @@ class Step extends Model
 {
     use HasFactory;
 
-    protected $fillables = [
+    protected $fillable = [
         'project_id',
         'parent_id',
         'step_number',
