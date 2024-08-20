@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->string('title', 255)->nullable(false);
             $table->json('description')->nullable();
-            $table->boolean('is_public')->nullable();
+            $table->boolean('is_public')->default(false);
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users');
