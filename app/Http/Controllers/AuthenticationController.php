@@ -25,6 +25,7 @@ class AuthenticationController extends Controller
         ]);
 
 
+
         if ($validate->fails()) {
             return response()->json([
                 'metadata' => [
@@ -205,7 +206,4 @@ class AuthenticationController extends Controller
             return response('', 302)->header('Location', "craftmate://?error={$message}");
         }
     }
-
-
-
 }
