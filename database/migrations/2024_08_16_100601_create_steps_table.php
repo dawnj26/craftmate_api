@@ -14,13 +14,10 @@ return new class extends Migration
         Schema::create('steps', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_id');
-            $table->unsignedBigInteger('parent_id')->nullable();
-            $table->unsignedInteger('step_number')->nullable(false);
-            $table->json('content');
+            $table->json('content')->nullable();
             $table->timestamps();
 
             $table->foreign('project_id')->references('id')->on('projects');
-            $table->foreign('parent_id')->references('id')->on('steps');
         });
     }
 
