@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Step extends Model
 {
@@ -13,19 +12,16 @@ class Step extends Model
 
     protected $fillable = [
         'project_id',
-        'parent_id',
-        'step_number',
         'content',
     ];
 
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(Step::class, 'parent_id');
-    }
+    protected $hidden = ['created_at', 'updated_at'];
 
-    public function children(): HasMany
+    public function casts(): array
     {
-        return $this->hasMany(Step::class, 'parent_id');
+        return [
+            'content' => 'array',
+        ];
     }
 
     public function project(): BelongsTo
