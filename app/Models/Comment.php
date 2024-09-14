@@ -28,8 +28,18 @@ class Comment extends Model
         return $this->hasMany(Comment::class, 'parent_id');
     }
 
-    public function post(): BelongsTo
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function likes(): HasMany
+    {
+        return $this->hasMany(CommentLike::class);
     }
 }
