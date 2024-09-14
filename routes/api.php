@@ -7,6 +7,8 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VideoController;
+use App\Http\Controllers\CommentController;
 
 Route::prefix('auth')->group(function () {
     Route::controller(AuthenticationController::class)->group(function () {
@@ -41,5 +43,12 @@ Route::prefix('project')->group(function () {
     });
 
     Route::post('{project}/like', [LikeController::class, 'toggle'])->middleware('auth:sanctum');
-    Route::post('image/upload', [ImageController::class, 'upload']);
+
+    // Media uploading
+    Route::post('image/upload', [ImageController::class, 'uploadDocumentImage']);
+    Route::post('video/upload', [VideoController::class, 'upload']);
+
+    // Comments
+    Route::get('{project}/comments', [CommentController::class, 'getComments'])->where('project', '[0-9]+');
+    Route::post('{project}/comment/{comment}/like', [CommentController::class, 'toggleLike'])->where('comment', '[0-9]+')->middleware('auth:sanctum');
 });
