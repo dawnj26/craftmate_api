@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ImageController extends Controller
 {
-    public function upload(Request $request)
+    public function uploadDocumentImage(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'image' => 'required|image|mimes:jpeg,png,jpg,gif'
@@ -24,19 +24,18 @@ class ImageController extends Controller
             ], 400);
         }
 
-        $image = $request->file('image');
-        $imageName = time() . '.' . $image->getClientOriginalExtension();
+        $image = $request->file('image')->store('images');
 
-        $img = Image::read($image->getRealPath());
+        if (!$image) {
+            return response()->json([
+                'metadata' => [
+                    'status' => 500,
+                    'message' => 'Failed to upload image'
+                ]
+            ], 500);
+        }
 
-        $img->resize(800, null, function ($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
-        });
-
-        $img->save(public_path('images/') . $imageName, 60);
-
-        $imageUrl = URL::to('/') . '/images/' . $imageName;
+        $imageUrl = URL::to('/') . '/' . $image;
 
         return response()->json([
             'metadata' => [
