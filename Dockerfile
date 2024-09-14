@@ -55,7 +55,7 @@ COPY . .
 RUN composer install --no-interaction --optimize-autoloader
 
 # Set permissions for Laravel.
-RUN chown -R www-data:www-data storage bootstrap/cache public/
+RUN chown -R www-data:www-data storage bootstrap/cache
 
 # Expose port 80 for Apache.
 EXPOSE 80
