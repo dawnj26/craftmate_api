@@ -49,6 +49,12 @@ Route::prefix('project')->group(function () {
     Route::post('video/upload', [VideoController::class, 'upload']);
 
     // Comments
-    Route::get('{project}/comments', [CommentController::class, 'getComments'])->where('project', '[0-9]+');
-    Route::post('{project}/comment/{comment}/like', [CommentController::class, 'toggleLike'])->where('comment', '[0-9]+')->middleware('auth:sanctum');
+    Route::controller(CommentController::class)->group(function () {
+        Route::get('{project}/comments', 'getComments')->where('project', '[0-9]+');
+        Route::post('{project}/comment/{comment}/like', 'toggleLike')->where('comment', '[0-9]+')->middleware('auth:sanctum');
+        Route::post('{project}/comment/create', 'createComment')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::post('{project}/comment/{comment}/edit', 'update')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::delete('{project}/comment/{comment}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::post('{project}/comment/{comment}/toggle-like', 'toggleLike')->where('comment', '[0-9]+')->middleware('auth:sanctum');
+    });
 });
