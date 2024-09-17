@@ -15,8 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('comment_id');
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent();
+            $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('comment_id')->references('id')->on('comments');
