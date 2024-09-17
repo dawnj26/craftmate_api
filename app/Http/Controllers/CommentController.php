@@ -2,27 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ResponseHelper\ResponseHelper;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use App\Http\Resources\CommentResource;
 use App\Models\Comment;
+use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
 {
     public function getComments(Project $project)
     {
-        $comments = $project->comments()->get();
+        $comments = $project->comments()->latest()->get();
         $comments->load('user', 'children');
 
-        return response()->json([
-            'metadata' => [
-                'status' => 200,
-                'message' => 'Comments retrieved successfully'
-            ],
-            'data' => [
-                'comments' => CommentResource::collection($comments),
-            ],
-        ], 200);
+        return ResponseHelper::jsonWithData(200, 'Comments retrieved.', [
+            'comments' => CommentResource::collection($comments),
+        ]);
     }
 
     public function toggleLike(Project $project, Comment $comment)
@@ -39,11 +35,64 @@ class CommentController extends Controller
             ]);
         }
 
-        return response()->json([
-            'metadata' => [
-                'status' => 200,
-                'message' => 'Toggled',
-            ]
-        ], 200);
+        return ResponseHelper::json(200, 'Toggled');
+    }
+
+    public function createComment(Request $request, Project $project)
+    {
+        $user = auth()->user();
+
+        $validate = Validator::make($request->all(), [
+            'comment' => 'required|string',
+        ]);
+
+        if ($validate->fails()) {
+            return ResponseHelper::json(422, 'Missing required fields or validation error');
+        }
+
+        $comment = Comment::create([
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'content' => $request->input('comment'),
+        ]);
+
+        $comment->load('user');
+
+        return ResponseHelper::jsonWithData(201, 'Created successfully!', new CommentResource($comment));
+    }
+
+    public function update(Request $request, Project $project, Comment $comment)
+    {
+        $user = auth()->user();
+
+        if ($user->id !== $comment->user_id) {
+            return ResponseHelper::json(400, 'Unauthorized');
+        }
+
+        $validate = Validator::make($request->all(), [
+            'comment' => 'required',
+        ]);
+
+        if ($validate->fails()) {
+            return ResponseHelper::errInput();
+        }
+
+        $comment->content = $request->input('comment');
+        $comment->save();
+
+        return ResponseHelper::updated();
+    }
+
+    public function delete(Project $project, Comment $comment)
+    {
+        $user = auth()->user();
+
+        if ($user->id !== $comment->user_id) {
+            return ResponseHelper::json(400, 'Unauthorized');
+        }
+
+        $comment->delete();
+
+        return ResponseHelper::json(200, 'Deleted successfully');
     }
 }
