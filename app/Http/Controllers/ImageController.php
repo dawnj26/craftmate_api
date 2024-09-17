@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Intervention\Image\Laravel\Facades\Image;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 
@@ -24,8 +23,8 @@ class ImageController extends Controller
             ], 400);
         }
 
-        $image = $request->file('image')->store('images');
 
+        $image = $request->file('image')->store('images');
         if (!$image) {
             return response()->json([
                 'metadata' => [
