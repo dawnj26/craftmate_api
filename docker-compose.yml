@@ -1,52 +1,52 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: craftmate_laravel
-    container_name: craftmate_api
-    restart: unless-stopped
-    environment:
-      APACHE_DOCUMENT_ROOT: /var/www/html/public
-      SERVICE_NAME: app
-      SERVICE_TAGS: dev
-    volumes:
-      - ./:/var/www/html
-    ports:
-      - 9000:80
-    networks:
-      - app_network
+    app:
+        image: craftmate_laravel
+        container_name: craftmate_api
+        restart: unless-stopped
+        environment:
+            APACHE_DOCUMENT_ROOT: /var/www/html/public
+            SERVICE_NAME: app
+            SERVICE_TAGS: dev
+        volumes:
+            - ./:/var/www/html
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - 9000:80
+        networks:
+            - app_network
 
-  mariadb:
-    image: mariadb:11.2.4
-    container_name: mariadb
-    restart: unless-stopped
-    environment:
-      MARIADB_DATABASE: craftmate
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_PASSWORD: admin
-      MARIADB_USER: craftmate_admin
-    volumes:
-      - dbdata:/var/lib/mysql
-    networks:
-      - app_network
+    mariadb:
+        image: mariadb:11.2.4
+        container_name: mariadb
+        restart: unless-stopped
+        environment:
+            MARIADB_DATABASE: craftmate
+            MARIADB_ROOT_PASSWORD: root
+            MARIADB_PASSWORD: admin
+            MARIADB_USER: craftmate_admin
+        volumes:
+            - dbdata:/var/lib/mysql
+        networks:
+            - app_network
 
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: phpmyadmin
-    restart: unless-stopped
-    environment:
-      PMA_HOST: mariadb
-      MARIADB_ROOT_PASSWORD: root
-    ports:
-      - 8080:80
-    networks:
-      - app_network
+    phpmyadmin:
+        image: phpmyadmin:latest
+        container_name: phpmyadmin
+        restart: unless-stopped
+        environment:
+            PMA_HOST: mariadb
+            MARIADB_ROOT_PASSWORD: root
+        ports:
+            - 8080:80
+        networks:
+            - app_network
 
 volumes:
-  dbdata:
-    driver: local
+    dbdata:
+        driver: local
 
 networks:
-  app_network:
-    driver: bridge
+    app_network:
+        driver: bridge

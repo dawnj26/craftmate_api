@@ -51,14 +51,18 @@ WORKDIR /var/www/html
 # Copy the Laravel application files into the container.
 COPY . .
 
+# Setup entrypoint
+COPY ./docker_entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker_entrypoint.sh
+
 # Install Laravel dependencies using Composer.
 RUN composer install --no-interaction --optimize-autoloader
 
 # Set permissions for Laravel.
-RUN chown -R www-data:www-data storage bootstrap/cache
+# RUN chown -R www-data:www-data storage/ bootstrap/cache
 
 # Expose port 80 for Apache.
 EXPOSE 80
 
 # Start Apache web server.
-CMD ["apache2-foreground"]
+CMD ["docker_entrypoint.sh"]
