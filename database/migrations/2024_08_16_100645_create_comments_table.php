@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->text('content');
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('project_id')->references('id')->on('projects');
             $table->foreign('parent_id')->references('id')->on('comments');

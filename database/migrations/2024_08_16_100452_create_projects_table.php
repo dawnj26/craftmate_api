@@ -19,6 +19,7 @@ return new class extends Migration
             $table->json('description')->nullable();
             $table->boolean('is_public')->default(false);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('parent_id')->references('id')->on('projects');
