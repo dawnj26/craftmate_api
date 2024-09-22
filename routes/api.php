@@ -40,12 +40,16 @@ Route::prefix('project')->group(function () {
         Route::post('{project}/edit/description', 'updateDescription')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/edit/steps', 'updateSteps')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::get('{project}', 'getProject')->where('project', '[0-9]+');
+        Route::post('{project}/edit', 'update')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::post('{project}/edit/visibility', 'updateVisibility')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::delete('{project}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
     });
 
     Route::post('{project}/like', [LikeController::class, 'toggle'])->middleware('auth:sanctum');
 
     // Media uploading
     Route::post('image/upload', [ImageController::class, 'uploadDocumentImage']);
+    Route::post('{project}/image/upload', [ImageController::class, 'uploadProjectImage'])->where('project', '[0-9]+')->middleware('auth:sanctum');
     Route::post('video/upload', [VideoController::class, 'upload']);
 
     // Comments
@@ -55,6 +59,5 @@ Route::prefix('project')->group(function () {
         Route::post('{project}/comment/create', 'createComment')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/comment/{comment}/edit', 'update')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::delete('{project}/comment/{comment}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
-        Route::post('{project}/comment/{comment}/toggle-like', 'toggleLike')->where('comment', '[0-9]+')->middleware('auth:sanctum');
     });
 });
