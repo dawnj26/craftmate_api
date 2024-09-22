@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('title', 255)->nullable(false);
             $table->json('description')->nullable();
             $table->boolean('is_public')->default(false);
+            $table->string('image_path', 255)->nullable();
             $table->timestamps();
             $table->softDeletes();
 

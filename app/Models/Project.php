@@ -23,6 +23,7 @@ class Project extends Model
         'title',
         'description',
         'is_public',
+        'image_path',
     ];
     protected $hidden = ['created_at', 'updated_at', 'deleted_at'];
 
