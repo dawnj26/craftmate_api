@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ResponseHelper\ResponseHelper;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\Tag;
@@ -10,7 +11,8 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
-    public function createProject(Request $request) {
+    public function createProject(Request $request)
+    {
         $validate = Validator::make($request->all(), [
             'title' => 'required',
             'tags' => 'nullable|string',
@@ -19,24 +21,17 @@ class ProjectController extends Controller
 
         $user = auth()->user();
 
-        if (!$user)
-        {
+        if (!$user) {
             return response()->json([
-                'metadata'=> [
+                'metadata' => [
                     'status' => 401,
                     'message' => 'Unauthorized'
                 ],
             ]);
         }
 
-        if ($validate->fails())
-        {
-            return response()->json([
-                'metadata' => [
-                    'status' => 422,
-                    'message' => 'Missing required fields or validation error',
-                ],
-            ], 422);
+        if ($validate->fails()) {
+            return ResponseHelper::errInput();
         }
 
         $project = Project::create([
@@ -45,8 +40,7 @@ class ProjectController extends Controller
             'is_public' => $request->input('is_public'),
         ]);
 
-        if ($request->has('tags'))
-        {
+        if ($request->has('tags')) {
             $tagNames = array_map('trim', explode(' ', $request->input('tags')));
             $tags = collect($tagNames)->map(function ($tagName) {
                 return Tag::firstOrCreate(['name' => $tagName]);
@@ -59,27 +53,15 @@ class ProjectController extends Controller
             $query->whereNull('parent_id');
         }]);
 
-        return response()->json([
-            'metadata' => [
-                'status' => 201,
-                'message' => 'Project created successfully',
-            ],
-            'data' => new ProjectResource($project),
-        ],201);
+        return ResponseHelper::jsonWithData(200, 'Project created successfully', new ProjectResource($project));
     }
 
     public function getProject(Project $project)
     {
-        return response()->json([
-            "metadata" => [
-                'status' => 200,
-                'message' => 'Project retrieved successfully',
-            ],
-            'data' => new ProjectResource($project),
-        ]);
+        return ResponseHelper::jsonWithData(200, 'Project fetched successfully', new ProjectResource($project));
     }
 
-    public function updateDescription(Request $request,Project $project)
+    public function updateDescription(Request $request, Project $project)
     {
         $validate = Validator::make($request->all(), [
             'description' => 'required|json',
@@ -88,25 +70,14 @@ class ProjectController extends Controller
         $user = auth()->user();
         $projectUserId = $project->user_id;
 
-        if ($validate->fails() || $user->id != $projectUserId)
-        {
-            return response()->json([
-                'metadata' => [
-                    'status' => 422,
-                    'message' => 'Missing required fields or validation error',
-                ],
-            ], 422);
+        if ($validate->fails() || $user->id != $projectUserId) {
+            return ResponseHelper::errInput();
         }
 
         $project->description = $request->input('description');
         $project->save();
 
-        return response()->json([
-            'metadata' => [
-                'status' => 200,
-                'message' => 'Updated successfully',
-            ],
-        ], 200);
+        return ResponseHelper::json(200, 'Updated successfully');
     }
 
     public function updateSteps(Request $request, Project $project)
@@ -118,14 +89,8 @@ class ProjectController extends Controller
         $user = auth()->user();
         $projectUserId = $project->user_id;
 
-        if ($validate->fails() || $user->id != $projectUserId)
-        {
-            return response()->json([
-                'metadata' => [
-                    'status' => 422,
-                    'message' => 'Missing required fields or validation error',
-                ],
-            ], 422);
+        if ($validate->fails() || $user->id != $projectUserId) {
+            return ResponseHelper::errInput();
         }
 
         $step = $project->step;
@@ -133,11 +98,66 @@ class ProjectController extends Controller
         $step->content = $request->input('steps');
         $step->save();
 
-        return response()->json([
-            'metadata' => [
-                'status' => 200,
-                'message' => 'Updated successfully',
-            ],
-        ], 200);
+        return ResponseHelper::json(200, 'Updated successfully');
+    }
+
+    public function update(Request $request, Project $project)
+    {
+        $validate = Validator::make($request->all(), [
+            'title' => 'required',
+            'tags' => 'nullable|string',
+        ]);
+
+        $user = auth()->user();
+        $projectUserId = $project->user_id;
+
+        if ($validate->fails() || $user->id != $projectUserId) {
+            return ResponseHelper::errInput();
+        }
+
+        $project->title = $request->input('title');
+        $project->save();
+
+        if ($request->has('tags')) {
+            $tagNames = array_map('trim', explode(' ', $request->input('tags')));
+            $tags = collect($tagNames)->map(function ($tagName) {
+                return Tag::firstOrCreate(['name' => $tagName]);
+            });
+
+            $project->tags()->sync($tags->pluck('id'));
+        } else {
+            $project->tags()->sync([]);
+        }
+
+        return ResponseHelper::jsonWithData(200, 'Project created successfully', new ProjectResource($project));
+    }
+
+    public function updateVisibility(Project $project)
+    {
+        $user = auth()->user();
+        $projectUserId = $project->user_id;
+
+        if ($user->id != $projectUserId) {
+            return ResponseHelper::json(422, 'Missing required fields or validation error');
+        }
+
+        $project->is_public = !$project->is_public;
+        $project->save();
+
+        return ResponseHelper::json(200, 'Updated successfully');
+    }
+
+    public function delete(Project $project)
+    {
+        $user = auth()->user();
+        $projectUserId = $project->user_id;
+
+        if ($user->id != $projectUserId) {
+            return ResponseHelper::json(401, 'Unauthorized');
+        }
+
+        $project->delete();
+
+        return ResponseHelper::json(200, 'Deleted successfully');
     }
 }
