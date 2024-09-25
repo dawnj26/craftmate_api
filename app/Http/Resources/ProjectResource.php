@@ -27,7 +27,7 @@ class ProjectResource extends JsonResource
             'tags' => $this->tags,
             'is_liked' => $user ? $this->isLikedByUser($user) : false,
             'like_count' => $this->likes()->count(),
-            'comment_count' => $this->comments()->count(),
+            'comment_count' => $this->comments()->whereNull('parent_id')->count(),
             'fork_count' => $this->child()->count(),
             'steps' => $this->step,
         ];
