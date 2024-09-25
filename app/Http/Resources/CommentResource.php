@@ -15,9 +15,11 @@ class CommentResource extends JsonResource
     public function toArray(Request $request): array
     {
         $user = auth('sanctum')->user();
+        $this->load('user', 'children');
 
         return [
             'id' => $this->id,
+            'parent_id' => $this->parent_id,
             'content' => $this->content,
             'like_count' => $this->likes()->count(),
             'children' => CommentResource::collection($this->whenLoaded('children')),
