@@ -58,6 +58,6 @@ Route::prefix('project')->group(function () {
         Route::post('{project}/comment/{comment}/like', 'toggleLike')->where('comment', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/comment/create', 'createComment')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/comment/{comment}/edit', 'update')->where('project', '[0-9]+')->middleware('auth:sanctum');
-        Route::delete('{project}/comment/{comment}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::post('{project}/comment/{comment}/reply', 'reply')->where('project', '[0-9]+')->middleware('auth:sanctum');
     });
 });
