@@ -107,7 +107,7 @@ class CommentController extends Controller
         return ResponseHelper::updated();
     }
 
-    public function delete(Project $project, Comment $comment)
+    public function delete(Comment $comment)
     {
         $user = auth()->user();
 
