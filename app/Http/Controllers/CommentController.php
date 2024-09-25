@@ -11,6 +11,28 @@ use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
 {
+    public function reply(Request $request, Project $project, Comment $comment)
+    {
+        $validate = Validator::make($request->all(), [
+            'comment' => 'required|string',
+        ]);
+
+        if ($validate->fails()) {
+            return ResponseHelper::errInput();
+        }
+
+        $user = auth()->user();
+
+        $comment = Comment::create([
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'parent_id' => $comment->id,
+            'content' => $request->input('comment'),
+        ]);
+
+        return ResponseHelper::jsonWithData(201, 'Reply success', new CommentResource($comment));
+    }
+
     public function getComments(Project $project)
     {
         $comments = $project->comments()->latest()->get();
