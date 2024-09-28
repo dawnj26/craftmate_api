@@ -9,6 +9,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ProjectsController;
 
 Route::prefix('auth')->group(function () {
     Route::controller(AuthenticationController::class)->group(function () {
@@ -62,3 +63,5 @@ Route::prefix('project')->group(function () {
         Route::delete('comment/{comment}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
     });
 });
+
+Route::get('projects', [ProjectsController::class, 'get']);
