@@ -11,12 +11,23 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
+    public function incrementView(Project $project)
+    {
+        $user = auth()->user();
+
+        if ($project->user_id !== $user->id) {
+            $project->views()->firstOrCreate(['user_id' => $user->id]);
+        }
+
+        return ResponseHelper::json(200, 'View incremented');
+    }
+
     public function createProject(Request $request)
     {
         $validate = Validator::make($request->all(), [
             'title' => 'required',
             'tags' => 'nullable|string',
-            'is_public' => 'required|boolean',
+            'visibility' => 'required|integer',
         ]);
 
         $user = auth()->user();
@@ -37,7 +48,7 @@ class ProjectController extends Controller
         $project = Project::create([
             'user_id' => $user->id,
             'title' => $request->input('title'),
-            'is_public' => $request->input('is_public'),
+            'visibility_id' => $request->input('visibility'),
         ]);
 
         if ($request->has('tags')) {
@@ -58,6 +69,7 @@ class ProjectController extends Controller
 
     public function getProject(Project $project)
     {
+        // dd($project->children());
         return ResponseHelper::jsonWithData(200, 'Project fetched successfully', new ProjectResource($project));
     }
 
@@ -99,6 +111,7 @@ class ProjectController extends Controller
         $step->save();
 
         return ResponseHelper::json(200, 'Updated successfully');
+        return ResponseHelper::jsonWithData(200, 'Steps updated successfully', new ProjectResource($project));
     }
 
     public function update(Request $request, Project $project)
@@ -132,16 +145,24 @@ class ProjectController extends Controller
         return ResponseHelper::jsonWithData(200, 'Project created successfully', new ProjectResource($project));
     }
 
-    public function updateVisibility(Project $project)
+    public function updateVisibility(Request $request, Project $project)
     {
+        $validate = Validator::make($request->all(), [
+            'visibility' => 'required|integer'
+        ]);
+
+        if ($validate->fails()) {
+            return ResponseHelper::errInput();
+        }
+
         $user = auth()->user();
         $projectUserId = $project->user_id;
 
         if ($user->id != $projectUserId) {
-            return ResponseHelper::json(422, 'Missing required fields or validation error');
+            return ResponseHelper::json(422, 'Unauthorized');
         }
 
-        $project->is_public = !$project->is_public;
+        $project->visibility_id = $request->input('visibility');
         $project->save();
 
         return ResponseHelper::json(200, 'Updated successfully');
