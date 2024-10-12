@@ -19,12 +19,12 @@ class CommentResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'parent_id' => $this->parent_id,
+            'parentId' => $this->parent_id,
             'content' => $this->content,
-            'like_count' => $this->likes()->count(),
+            'likeCount' => $this->likes()->count(),
             'children' => CommentResource::collection($this->whenLoaded('children')),
             'user' => new UserResource($this->whenLoaded('user')),
-            'is_liked' => $user === null ? false : $this->isLikedByUser($user),
+            'isLiked' => $user === null ? false : $this->isLikedByUser($user),
         ];
     }
 }

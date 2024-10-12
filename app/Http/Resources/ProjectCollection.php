@@ -16,15 +16,11 @@ class ProjectCollection extends ResourceCollection
     {
         return [
             'items' => $this->collection,
-            'links' => [
-                'next' => $this->nextPageUrl(),
-            ],
-            'meta' => [
-                'current_page' => $this->currentPage(),
-                'per_page' => $this->perPage(),
-                'total' => $this->total(),
-                'last_page' => $this->lastPage(),
-            ],
+            'nextPageUrl' => $this->nextPageUrl(),
+            'currentPage' => $this->currentPage(),
+            'pageSize' => $this->perPage(),
+            'totalItems' => $this->total(),
+            'totalPages' => $this->lastPage(),
         ];
     }
 }
