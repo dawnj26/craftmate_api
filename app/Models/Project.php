@@ -22,7 +22,7 @@ class Project extends Model
         'parent_id',
         'title',
         'description',
-        'is_public',
+        'visibility_id',
         'image_path',
     ];
     protected $hidden = ['created_at', 'updated_at', 'deleted_at'];
@@ -65,4 +65,10 @@ class Project extends Model
     {
         return $this->likes()->where('user_id', $user->id)->exists();
     }
+
+    public function visibility(): BelongsTo
+    {
+        return $this->belongsTo(Visibility::class);
+    }
+
 }
