@@ -13,9 +13,15 @@ class Step extends Model
     protected $fillable = [
         'project_id',
         'content',
+        'order',
     ];
 
+    protected $touches = ['project'];
+
     protected $hidden = ['created_at', 'updated_at'];
+    protected $casts = [
+        'content' => 'array',
+    ];
 
     public function casts(): array
     {

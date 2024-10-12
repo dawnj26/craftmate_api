@@ -46,9 +46,9 @@ class Project extends Model
         return $this->hasMany(Comment::class);
     }
 
-    public function step(): HasOne
+    public function steps(): HasMany
     {
-        return $this->hasOne(Step::class);
+        return $this->hasMany(Step::class);
     }
 
     public function likes(): HasMany
