@@ -25,13 +25,13 @@ class Project extends Model
         'visibility_id',
         'image_path',
     ];
-    protected $hidden = ['created_at', 'updated_at', 'deleted_at'];
 
-    protected $casts = [
-        'description' => 'array',
-    ];
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'parent_id');
+    }
 
-    public function child(): HasMany
+    public function children(): HasMany
     {
         return $this->hasMany(Project::class, 'parent_id');
     }
@@ -71,4 +71,8 @@ class Project extends Model
         return $this->belongsTo(Visibility::class);
     }
 
+    public function views(): HasMany
+    {
+        return $this->hasMany(ProjectView::class);
+    }
 }
