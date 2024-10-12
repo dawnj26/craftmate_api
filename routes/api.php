@@ -1,32 +1,21 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthenticationController;
-use App\Http\Controllers\OTPController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProjectsController;
 
-Route::prefix('auth')->group(function () {
-    Route::controller(AuthenticationController::class)->group(function () {
-        Route::post('login', 'login');
-        Route::post('signup', 'signup');
-        Route::get('{driver}', 'redirectDriver')->whereIn('driver', ['google', 'facebook']);
-        Route::get('{driver}/callback', 'driverCallback')->whereIn('driver', ['google', 'facebook']);
-        Route::post('logout', 'logout')->middleware('auth:sanctum');
-    });
+require __DIR__.'/user_auth/auth.php';
+require __DIR__.'/project/project.php';
+
+Route::get('projects/latest', [ProjectsController::class, 'getLatest']);
+
+Route::get('user/{user}/projects', [ProjectsController::class, 'getUserProjects'])
+        ->where('user', '[0-9]+')
+        ->middleware('auth:sanctum');
 
 
+Route::get('user/projects/{visibility?}', [ProjectsController::class, 'getCurrentUserProjects'])
+        ->whereIn('visibility', [1, 2, 3])
+        ->middleware('auth:sanctum');
 
-    Route::controller(UserController::class)->group(function () {
-        Route::middleware('auth:sanctum')->group(function () {
-            Route::get('user/', 'user');
-            Route::post('password/reset', 'resetPassword');
-        });
-
-        Route::get('user/verify', 'verifyUser');
-    });
-
-    Route::controller(OTPController::class)->group(function () {
-        Route::post('otp/send', 'sendOtp');
-        Route::post('otp/verify', 'verifyOtp');
-    });
-});
+Route::delete('user/projects/delete', [ProjectsController::class, 'deleteUserProjects'])
+        ->middleware('auth:sanctum');

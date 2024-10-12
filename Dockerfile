@@ -1,50 +1,24 @@
-# Use an official PHP image with Apache as the base image.
-FROM php:8.3-apache
+FROM php:8.3-fpm-alpine
 
-# Set environment variables.
-ENV ACCEPT_EULA=Y
-LABEL maintainer="jaysonquinto1@outlook.com"
+WORKDIR /var/www/app
 
-# Install system dependencies.
-RUN apt-get update && apt-get install -y \
+RUN apk update && apk add \
+    curl \
     libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
+    libxml2-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
     zip \
     unzip \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    git
 
-# Enable Apache modules required for Laravel.
-RUN a2enmod rewrite
-
-# Set the Apache document root
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-
-# Update the default Apache site configuration
-COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
-
-# Install PHP extensions.
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql
+    && docker-php-ext-install gd pdo pdo_mysql \
+    && apk --no-cache add nodejs npm
 
-# Install Composer globally.
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+COPY ./.php/php.ini /usr/local/etc/php/conf.d/99-nginx.ini
 
-# Create a directory for your Laravel application.
-WORKDIR /var/www/html
+USER root
 
-# Copy the Laravel application files into the container.
-COPY . .
-
-# Install Laravel dependencies using Composer.
-RUN composer install --no-interaction --optimize-autoloader
-
-# Set permissions for Laravel.
-RUN chown -R www-data:www-data storage bootstrap/cache
-
-# Expose port 80 for Apache.
-EXPOSE 80
-
-# Start Apache web server.
-CMD ["apache2-foreground"]
+RUN chmod 777 -R /var/www/app

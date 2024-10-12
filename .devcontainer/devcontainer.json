@@ -1,0 +1,43 @@
+// https://aka.ms/devcontainer.json
+{
+	"name": "Existing Docker Compose (Extend)",
+	"dockerComposeFile": [
+		"../docker-compose.yml"
+	],
+	"service": "php",
+	"workspaceFolder": "/var/www/app",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode-remote.remote-containers",
+				"mikestead.dotenv",
+				"bradlc.vscode-tailwindcss",
+				"bmewburn.vscode-intelephense-client",
+				"VisualStudioExptTeam.intellicode-api-usage-examples",
+				"VisualStudioExptTeam.vscodeintellicode",
+				"enkia.tokyo-night",
+				"xdebug.php-debug",
+				"pgl.laravel-jump-controller",
+				"naoray.laravel-goto-components",
+				"codingyu.laravel-goto-view",
+				"amiralizadeh9480.laravel-extra-intellisense",
+				"glitchbl.laravel-create-view",
+				"IHunte.laravel-blade-wrapper",
+				"onecentlin.laravel-blade",
+				"shufo.vscode-blade-formatter",
+				"ryannaddy.laravel-artisan",
+				"eamodio.gitlens",
+				"EditorConfig.EditorConfig",
+				"damms005.devdb",
+				"onecentlin.laravel5-snippets",
+				"GitHub.copilot"
+			],
+			"settings": {}
+		}
+	},
+	"remoteUser": "root",
+	"postCreateCommand": "chown -R 777 /var/www/app 2>/dev/null || true",
+	// "forwardPorts": [],
+	// "runServices": [],
+	"shutdownAction": "none"
+}
