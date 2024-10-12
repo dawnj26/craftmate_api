@@ -12,9 +12,7 @@ class ProjectObserver
      */
     public function created(Project $project): void
     {
-        Step::create([
-            'project_id' => $project->id,
-        ]);
+
     }
 
     /**
