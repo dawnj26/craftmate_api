@@ -7,6 +7,7 @@ use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
@@ -60,9 +61,7 @@ class ProjectController extends Controller
             $project->tags()->sync($tags->pluck('id'));
         }
 
-        $project->with(['steps' => function ($query) {
-            $query->whereNull('parent_id');
-        }]);
+        $project->with('steps');
 
         return ResponseHelper::jsonWithData(200, 'Project created successfully', new ProjectResource($project));
     }
@@ -95,7 +94,7 @@ class ProjectController extends Controller
     public function updateSteps(Request $request, Project $project)
     {
         $validate = Validator::make($request->all(), [
-            'steps' => 'required|json',
+            'steps' => 'required',
         ]);
 
         $user = auth()->user();
@@ -105,12 +104,42 @@ class ProjectController extends Controller
             return ResponseHelper::errInput();
         }
 
-        $step = $project->step;
+        $stepsData = json_decode($request->input('steps'), true);
+        $existingSteps = $project->steps()->orderBy('order')->get();
 
-        $step->content = $request->input('steps');
-        $step->save();
+        DB::beginTransaction();
+        try {
+            foreach ($stepsData as $index => $stepContent) {
+                $stepContentArray = json_decode($stepContent, true);
+                if (isset($existingSteps[$index])) {
+                    // Update existing step
+                    $existingStep = $existingSteps[$index];
+                    $existingStep->content = $stepContentArray;
+                    $existingStep->order = $index;
+                    $existingStep->save();
+                } else {
+                    // Create new step
+                    $project->steps()->create([
+                        'content' => $stepContentArray,
+                        'order' => $index,
+                    ]);
+                }
+            }
 
-        return ResponseHelper::json(200, 'Updated successfully');
+            // Delete excess steps
+            if (count($existingSteps) > count($stepsData)) {
+                $excessSteps = $existingSteps->slice(count($stepsData));
+                foreach ($excessSteps as $excessStep) {
+                    $excessStep->delete();
+                }
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseHelper::json(500, 'An error occurred while updating steps');
+        }
+
         return ResponseHelper::jsonWithData(200, 'Steps updated successfully', new ProjectResource($project));
     }
 
