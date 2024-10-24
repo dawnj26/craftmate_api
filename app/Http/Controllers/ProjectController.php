@@ -12,15 +12,38 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
-    public function incrementView(Project $project)
+    public function fork(Project $project)
     {
         $user = auth()->user();
+
+        if (!$user) {
+            return ResponseHelper::json(401, 'Unauthorized');
+        }
+
+        $forkedProject = $project->replicate();
+        $forkedProject->user_id = $user->id;
+        $forkedProject->parent_id = $project->id;
+        $forkedProject->save();
+
+        $forkedProject->tags()->sync($project->tags->pluck('id'));
+
+        foreach ($project->steps as $step) {
+            $clonedStep = $step->replicate();
+            $forkedProject->steps()->save($clonedStep);
+        }
+
+        return ResponseHelper::jsonWithData(200, 'Project forked successfully', ['projectId' => $forkedProject->id]);
+    }
+
+    private function incrementView(Project $project)
+    {
+        $user = auth()->user();
+
+        if (!$user) return;
 
         if ($project->user_id !== $user->id) {
             $project->views()->firstOrCreate(['user_id' => $user->id]);
         }
-
-        return ResponseHelper::json(200, 'View incremented');
     }
 
     public function createProject(Request $request)
@@ -69,6 +92,8 @@ class ProjectController extends Controller
     public function getProject(Project $project)
     {
         // dd($project->children());
+        $this->incrementView($project);
+        $project->load('materials');
         return ResponseHelper::jsonWithData(200, 'Project fetched successfully', new ProjectResource($project));
     }
 

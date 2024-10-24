@@ -12,10 +12,10 @@ Route::prefix('project')->group(function () {
         Route::post('{project}/edit/description', 'updateDescription')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/edit/steps', 'updateSteps')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::get('{project}', 'getProject')->where('project', '[0-9]+');
-        Route::post('{project}/view', 'incrementView')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/edit', 'update')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/edit/visibility', 'updateVisibility')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::delete('{project}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::post('{project}/fork', 'fork')->where('project', '[0-9]+')->middleware('auth:sanctum');
     });
 
     Route::post('{project}/like', [LikeController::class, 'toggle'])->middleware('auth:sanctum');
