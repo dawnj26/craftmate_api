@@ -26,6 +26,11 @@ class Project extends Model
         'image_path',
     ];
 
+    public function materials(): BelongsToMany
+    {
+        return $this->belongsToMany(Material::class);
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'parent_id');
