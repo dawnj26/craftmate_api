@@ -15,6 +15,7 @@ Route::prefix('project')->group(function () {
         Route::post('{project}/edit', 'update')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('{project}/edit/visibility', 'updateVisibility')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::delete('{project}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
+        Route::post('{project}/fork', 'fork')->where('project', '[0-9]+')->middleware('auth:sanctum');
     });
 
     Route::post('{project}/like', [LikeController::class, 'toggle'])->middleware('auth:sanctum');
