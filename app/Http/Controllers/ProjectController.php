@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ResponseHelper\ResponseHelper;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Models\Material;
 use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,53 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
+    public function saveSuggestion(Request $request)
+    {
+        // 13 default category
+        $request->validate([
+            'title' => 'required|string',
+            'description' => 'required|string',
+            'steps' => 'required|array',
+            'steps.*' => 'string',
+            'materials' => 'required|array',
+            'materials.*' => 'string',
+        ]);
+
+        $user = auth()->user();
+        $description = $request->description;
+        try {
+            DB::beginTransaction();
+            $project = Project::create([
+                'user_id' => $user->id,
+                'title' => $request->input('title'),
+                'description' => [['insert' => "$description\n"]],
+                'visibility_id' => 2,
+            ]);
+            foreach ($request->materials as $material) {
+                $project->materials()->create([
+                    'name' => $material,
+                    'category_id' => 13,
+                    'quantity' => 1,
+                    'user_id' => $user->id,
+                ]);
+            }
+
+            foreach ($request->steps as $index => $stepContent) {
+                $project->steps()->create([
+                    'content' => [['insert' => "$stepContent\n"]],
+                    'order' => $index + 1
+                ]);
+            }
+            DB::commit();
+            $project->load('materials');
+            return ResponseHelper::jsonWithData(201, 'Saved successfully', new ProjectResource($project));
+        } catch( \Exception $e) {
+            DB::rollBack();
+
+            return ResponseHelper::json('500', $e->getMessage());
+        }
+
+    }
     public function fork(Project $project)
     {
         $user = auth()->user();
