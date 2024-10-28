@@ -26,6 +26,10 @@ class Project extends Model
         'image_path',
     ];
 
+    protected $casts = [
+        'description' => 'array',
+    ];
+
     public function materials(): BelongsToMany
     {
         return $this->belongsToMany(Material::class);
