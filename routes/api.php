@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AIController;
 use App\Http\Controllers\MaterialController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProjectsController;
@@ -34,3 +35,8 @@ Route::get('materials/search', [MaterialController::class, 'searchMaterials'])->
 Route::get('materials/project/{project}', [MaterialController::class, 'getProjectMaterials'])->where('project', '[0-9]+');
 Route::post('project/{project}/materials/add', [MaterialController::class, 'addMaterialsToProject'])->where('project', '[0-9]+')->middleware('auth:sanctum');
 Route::delete('project/{project}/materials/delete', [MaterialController::class, 'deleteProjectMaterials'])->where('project', '[0-9]+')->middleware('auth:sanctum');
+
+Route::controller(AIController::class)->group(function () {
+    Route::post('project/suggest', 'generateSuggestions');
+    Route::post('project/generate', 'generateProject');
+});
