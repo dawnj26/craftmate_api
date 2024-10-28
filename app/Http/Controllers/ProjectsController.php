@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Material;
 
 class ProjectsController extends Controller
 {
@@ -92,10 +93,10 @@ class ProjectsController extends Controller
 
             if ($sortBy === 'like_count') {
                 $query->withCount('likes')
-                ->orderBy('likes_count', $order);
+                    ->orderBy('likes_count', $order);
             } else if ($sortBy === 'comment_count') {
                 $query->withCount('comments')
-                ->orderBy('comments_count', $order);
+                    ->orderBy('comments_count', $order);
             } else {
 
                 $query->orderBy($sortBy, $order);
