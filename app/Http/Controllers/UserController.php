@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ResponseHelper\ResponseHelper;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
@@ -29,13 +31,7 @@ class UserController extends Controller
             ], 404);
         }
 
-        return response()->json([
-            'metadata' => [
-                'status' => 200,
-                'message' => 'User found'
-            ],
-            'data' => $user
-        ], 200);
+        return ResponseHelper::jsonWithData(200, 'User data retrieved successfully', new UserResource($user));
     }
 
     public function verifyUser(Request $request)
