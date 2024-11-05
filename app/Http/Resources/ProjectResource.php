@@ -32,7 +32,9 @@ class ProjectResource extends JsonResource
             'likeCount' => $this->likes()->count(),
             'commentCount' => $this->comments()->whereNull('parent_id')->count(),
             'forkCount' => $this->children()->count(),
-            'steps' => StepResource::collection($this->steps),
+            'steps' => $this->whenLoaded('steps', function() {
+                return StepResource::collection($this->steps);
+            }),
             'viewCount' => $this->views()->count(),
             'updatedAt' => $this->updated_at,
             'createdAt' => $this->created_at,
@@ -47,6 +49,9 @@ class ProjectResource extends JsonResource
             }),
             'materials' => $this->whenLoaded('materials', function() {
                 return MaterialResource::collection($this->materials);
+            }),
+            'category' => $this->whenLoaded('projectCategory', function() {
+                return new ProjectCategoryResource($this->projectCategory);
             }),
         ];
     }
