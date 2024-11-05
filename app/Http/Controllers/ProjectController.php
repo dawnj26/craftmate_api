@@ -85,7 +85,7 @@ class ProjectController extends Controller
 
     private function incrementView(Project $project)
     {
-        $user = auth()->user();
+        $user = auth('sanctum')->user();
 
         if (!$user) return;
 
@@ -100,6 +100,7 @@ class ProjectController extends Controller
             'title' => 'required',
             'tags' => 'nullable|string',
             'visibility' => 'required|integer',
+            'category' => 'required|integer',
         ]);
 
         $user = auth()->user();
@@ -121,6 +122,7 @@ class ProjectController extends Controller
             'user_id' => $user->id,
             'title' => $request->input('title'),
             'visibility_id' => $request->input('visibility'),
+            'project_category_id' => $request->input('category'),
         ]);
 
         if ($request->has('tags')) {
@@ -139,9 +141,8 @@ class ProjectController extends Controller
 
     public function getProject(Project $project)
     {
-        // dd($project->children());
         $this->incrementView($project);
-        $project->load('materials');
+        $project->load(['materials', 'steps', 'projectCategory']);
         return ResponseHelper::jsonWithData(200, 'Project fetched successfully', new ProjectResource($project));
     }
 
@@ -158,7 +159,7 @@ class ProjectController extends Controller
             return ResponseHelper::errInput();
         }
 
-        $project->description = $request->input('description');
+        $project->description = json_decode($request->input('description'), true);
         $project->save();
 
         return ResponseHelper::json(200, 'Updated successfully');
@@ -221,6 +222,7 @@ class ProjectController extends Controller
         $validate = Validator::make($request->all(), [
             'title' => 'required',
             'tags' => 'nullable|string',
+            'category' => 'required|integer',
         ]);
 
         $user = auth()->user();
@@ -231,6 +233,7 @@ class ProjectController extends Controller
         }
 
         $project->title = $request->input('title');
+        $project->project_category_id = $request->input('category');
         $project->save();
 
         if ($request->has('tags')) {
@@ -244,6 +247,7 @@ class ProjectController extends Controller
             $project->tags()->sync([]);
         }
 
+        $project->load(['materials', 'steps', 'projectCategory']);
         return ResponseHelper::jsonWithData(200, 'Project created successfully', new ProjectResource($project));
     }
 
