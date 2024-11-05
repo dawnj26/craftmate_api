@@ -14,10 +14,19 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $user = auth('sanctum')->user();
+        $profile = $this->profile;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'image' => $profile->image,
+            'bio' => $profile->bio,
+            'followerCount' => $this->followers()->count(),
+            'followingCount' => $this->following()->count(),
+            'projectCount' => $this->projects()->count(),
+            'isFollowed' => $user === null ? false : $this->isFollowedByUser($user),
         ];
     }
 }
