@@ -3,12 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Observers\UserObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+#[ObservedBy([UserObserver::class])]
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -77,5 +81,21 @@ class User extends Authenticatable
     public function materials(): HasMany
     {
         return $this->hasMany(Material::class);
+    }
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'user_id', 'follower_id');
+    }
+    public function following()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'user_id');
+    }
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+    public function isFollowedByUser(User $user)
+    {
+        return $this->followers()->where('follower_id', $user->id)->exists();
     }
 }
