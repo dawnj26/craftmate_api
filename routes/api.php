@@ -1,15 +1,23 @@
 <?php
 
 use App\Http\Controllers\AIController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProjectsController;
 use App\Models\Material;
+use Illuminate\Support\Facades\Request;
 
 require __DIR__.'/user_auth/auth.php';
 require __DIR__.'/project/project.php';
+require __DIR__.'/search/search.php';
 
 Route::get('projects/latest', [ProjectsController::class, 'getLatest']);
+Route::get('projects/following', [ProjectsController::class, 'getFollowing'])->middleware('auth:sanctum');
+Route::get('projects/trending', [ProjectsController::class, 'getTrending']);
+
+Route::get('project/categories', [CategoryController::class, 'getProjectCategories']);
 
 Route::get('user/{user}/projects', [ProjectsController::class, 'getUserProjects'])
         ->where('user', '[0-9]+')
