@@ -10,6 +10,7 @@ use App\Models\MaterialCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Project;
+use Illuminate\Support\Facades\DB;
 
 class MaterialController extends Controller
 {
@@ -44,6 +45,31 @@ class MaterialController extends Controller
 
         return ResponseHelper::jsonWithData(200, 'Materials added to project successfully', MaterialResource::collection($project->materials));
     }
+
+    public function saveMaterialsToProject(Request $request, Project $project)
+    {
+        $validator = Validator::make($request->all(), [
+            'materials' => 'required|array',
+            'materials.*' => 'integer',
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseHelper::errInput();
+        }
+        try {
+            DB::beginTransaction();
+            $project->materials()->detach();
+            $project->materials()->attach($request->materials);
+            DB::commit();
+
+            return ResponseHelper::jsonWithData(200, 'Materials added to project successfully', MaterialResource::collection($project->materials));
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseHelper::json(500, $e->getMessage());
+        }
+    }
+
+
 
     public function getProjectMaterials($project)
     {
