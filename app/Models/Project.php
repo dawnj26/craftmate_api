@@ -24,10 +24,11 @@ class Project extends Model
         'description',
         'visibility_id',
         'image_path',
+        'project_category_id',
     ];
 
     protected $casts = [
-        'description' => 'array',
+        'description' => 'array'
     ];
 
     public function materials(): BelongsToMany
@@ -83,5 +84,10 @@ class Project extends Model
     public function views(): HasMany
     {
         return $this->hasMany(ProjectView::class);
+    }
+
+    public function projectCategory(): BelongsTo
+    {
+        return $this->belongsTo(ProjectCategory::class);
     }
 }
