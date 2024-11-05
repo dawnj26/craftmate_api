@@ -12,8 +12,9 @@ RUN apk update && apk add \
     unzip \
     git
 
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql \
+RUN docker-php-ext-configure pcntl --enable-pcntl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd pdo pdo_mysql pcntl \
     && apk --no-cache add nodejs npm
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
