@@ -20,6 +20,7 @@ Route::prefix('auth')->group(function () {
         });
 
         Route::get('user/verify', 'verifyUser');
+        Route::get('users/', 'getUsers');
     });
 
     Route::controller(OTPController::class)->group(function () {

@@ -17,6 +17,15 @@ class Project extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static function booted()
+{
+    static::addGlobalScope('withoutBannedUsers', function ($builder) {
+        $builder->whereHas('user', function($query) {
+            $query->whereNull('deleted_at');
+        });
+    });
+}
+
     protected $fillable = [
         'user_id',
         'parent_id',
@@ -25,6 +34,10 @@ class Project extends Model
         'visibility_id',
         'image_path',
         'project_category_id',
+        'started_at',
+        'expected_completion_at',
+        'completed_at',
+        'forkable',
     ];
 
     protected $casts = [
@@ -33,7 +46,11 @@ class Project extends Model
 
     public function materials(): BelongsToMany
     {
-        return $this->belongsToMany(Material::class);
+        return $this->belongsToMany(Material::class)->withPivot('material_quantity');
+    }
+
+    public function usedMaterials(): BelongsToMany  {
+        return $this->belongsToMany(Material::class, 'started_project_material', 'project_id', 'material_id')->withPivot('material_quantity');
     }
 
     public function parent(): BelongsTo

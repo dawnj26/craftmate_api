@@ -24,6 +24,7 @@ class MaterialResource extends JsonResource
             'imageUrl' => $this->image,
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
+
         ];
     }
 }

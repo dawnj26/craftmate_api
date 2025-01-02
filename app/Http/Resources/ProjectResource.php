@@ -26,20 +26,24 @@ class ProjectResource extends JsonResource
             'imageUrl' => $this->image_path,
             'parentId' => $this->parent_id,
             'visibility' => $this->visibility()->first()->name,
-            'creator' => $this->user,
+            'creator' => new UserResource($this->user),
             'tags' => $this->tags,
             'isLiked' => $user ? $this->isLikedByUser($user) : false,
             'likeCount' => $this->likes()->count(),
             'commentCount' => $this->comments()->whereNull('parent_id')->count(),
+            'forkable' => $this->forkable === 1,
             'forkCount' => $this->children()->count(),
-            'steps' => $this->whenLoaded('steps', function() {
+            'steps' => $this->whenLoaded('steps', function () {
                 return StepResource::collection($this->steps);
             }),
             'viewCount' => $this->views()->count(),
             'updatedAt' => $this->updated_at,
             'createdAt' => $this->created_at,
             'deletedAt' => $this->deleted_at,
-            'fork' => $this->when($this->parent, function() {
+            'startedAt' => $this->started_at,
+            'expectedCompletionAt' => $this->expected_completion_at,
+            'completedAt' => $this->completed_at,
+            'fork' => $this->when($this->parent, function () {
                 $parent = $this->parent;
 
                 return [
@@ -47,12 +51,25 @@ class ProjectResource extends JsonResource
                     'title' => $parent->title,
                 ];
             }),
-            'materials' => $this->whenLoaded('materials', function() {
-                return MaterialResource::collection($this->materials);
+            'materials' => $this->whenLoaded('materials', function () {
+                return $this->materials->map(function ($material) {
+                    return [
+                        'id' => $material->id,
+                        'user' => UserResource::make($material->user),
+                        'name' => $material->name,
+                        'description' => $material->description,
+                        'materialCategory' => MaterialCategoryResource::make($material->category),
+                        'quantity' => $material->quantity,
+                        'imageUrl' => $material->image,
+                        'createdAt' => $material->created_at,
+                        'updatedAt' => $material->updated_at,
+
+                        'materialQuantity' => $material->pivot->material_quantity ?? 0
+
+                    ];
+                });
             }),
-            'category' => $this->whenLoaded('projectCategory', function() {
-                return new ProjectCategoryResource($this->projectCategory);
-            }),
+            'category' => new ProjectCategoryResource($this->projectCategory),
         ];
     }
 }

@@ -36,9 +36,12 @@ class CommentController extends Controller
     public function getComments(Project $project)
     {
         $comments = $project->comments()
-                            ->whereNull('parent_id')
-                            ->latest()
-                            ->get();
+            ->whereHas('user', function($query) {
+                $query->whereNull('deleted_at');
+            })
+            ->whereNull('parent_id')
+            ->latest()
+            ->get();
 
         return ResponseHelper::jsonWithData(200, 'Comments retrieved.', [
             'comments' => CommentResource::collection($comments),

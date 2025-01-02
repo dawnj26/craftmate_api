@@ -46,4 +46,8 @@ return [
         'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
         'redirect' => 'https://moved-wasp-willingly.ngrok-free.app/api/auth/facebook/callback',
     ],
+
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+    ],
 ];

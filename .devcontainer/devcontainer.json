@@ -5,7 +5,7 @@
 		"../docker-compose.yml"
 	],
 	"service": "php",
-	"workspaceFolder": "/var/www/app",
+	"workspaceFolder": "/var/www/html",
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -26,7 +26,6 @@
 				"onecentlin.laravel-blade",
 				"shufo.vscode-blade-formatter",
 				"ryannaddy.laravel-artisan",
-				"eamodio.gitlens",
 				"EditorConfig.EditorConfig",
 				"damms005.devdb",
 				"onecentlin.laravel5-snippets",
@@ -36,7 +35,7 @@
 		}
 	},
 	"remoteUser": "root",
-	"postCreateCommand": "chown -R 777 /var/www/app 2>/dev/null || true",
+	"postCreateCommand": "chown -R www-data:www-data /var/www/html 2>/dev/null || true",
 	// "forwardPorts": [],
 	// "runServices": [],
 	"shutdownAction": "none"

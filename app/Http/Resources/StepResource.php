@@ -18,6 +18,7 @@ class StepResource extends JsonResource
             'id' => $this->id,
             'stepNumber' => $this->order,
             'content' => $this->content,
+            'completedAt' => $this->completed_at,
         ];
     }
 }

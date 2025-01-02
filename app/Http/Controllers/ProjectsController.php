@@ -14,6 +14,167 @@ use App\Models\Material;
 
 class ProjectsController extends Controller
 {
+    public function getCurrentUserInactiveProjects(Request $request, int $visibility = null)
+    {
+        $user = auth()->user();
+        $query = $user->projects()
+            ->whereNull(['completed_at', 'started_at']);
+
+        if ($visibility) {
+            $query->where('visibility_id', $visibility);
+        }
+        // Apply category filter
+        if ($request->has('category_id')) {
+            $query->where('project_category_id', $request->category_id);
+        }
+
+        // Apply search filter
+        if ($request->has('q')) {
+            $searchTerm = $request->q;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%")
+                    ->orWhereRaw("JSON_EXTRACT(description, '$.content') LIKE ?", ["%{$searchTerm}%"]);
+            });
+        }
+
+        if ($request->has('sort_by')) {
+            $sortBy = $request->input('sort_by');
+            $allowedSorts = ['updated_at', 'created_at', 'like_count', 'comment_count', 'title'];
+
+            if (!in_array($sortBy, $allowedSorts)) {
+                return ResponseHelper::errInput();
+            }
+
+            $order = $request->input('order', 'desc');
+            if (!in_array($order, ['asc', 'desc'])) {
+                return ResponseHelper::errInput();
+            }
+
+            if ($sortBy === 'like_count') {
+                $query->withCount('likes')
+                    ->orderBy('likes_count', $order);
+            } else if ($sortBy === 'comment_count') {
+                $query->withCount('comments')
+                    ->orderBy('comments_count', $order);
+            } else {
+                $query->orderBy($sortBy, $order);
+            }
+        } else {
+            $query->latest('updated_at');
+        }
+
+        $projects = $query->paginate(10);
+
+        return ResponseHelper::jsonWithData(200, 'Ongoing projects retrieved', new ProjectCollection($projects));
+    }
+    public function getCurrentUserCompletedProjects(Request $request, int $visibility = null)
+    {
+        $user = auth()->user();
+        $query = $user->projects()
+            ->where('completed_at', '!=', null);
+
+        if ($visibility) {
+            $query->where('visibility_id', $visibility);
+        }
+        // Apply category filter
+        if ($request->has('category_id')) {
+            $query->where('project_category_id', $request->category_id);
+        }
+
+        // Apply search filter
+        if ($request->has('q')) {
+            $searchTerm = $request->q;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%")
+                    ->orWhereRaw("JSON_EXTRACT(description, '$.content') LIKE ?", ["%{$searchTerm}%"]);
+            });
+        }
+
+        if ($request->has('sort_by')) {
+            $sortBy = $request->input('sort_by');
+            $allowedSorts = ['updated_at', 'created_at', 'like_count', 'comment_count', 'title'];
+
+            if (!in_array($sortBy, $allowedSorts)) {
+                return ResponseHelper::errInput();
+            }
+
+            $order = $request->input('order', 'desc');
+            if (!in_array($order, ['asc', 'desc'])) {
+                return ResponseHelper::errInput();
+            }
+
+            if ($sortBy === 'like_count') {
+                $query->withCount('likes')
+                    ->orderBy('likes_count', $order);
+            } else if ($sortBy === 'comment_count') {
+                $query->withCount('comments')
+                    ->orderBy('comments_count', $order);
+            } else {
+                $query->orderBy($sortBy, $order);
+            }
+        } else {
+            $query->latest('updated_at');
+        }
+
+        $projects = $query->paginate(10);
+
+        return ResponseHelper::jsonWithData(200, 'Ongoing projects retrieved', new ProjectCollection($projects));
+    }
+    public function getCurrentUserOngoingProjects(Request $request, int $visibility = null)
+    {
+        $user = auth()->user();
+        $query = $user->projects()
+            ->whereNull('completed_at')
+            ->where('started_at', '!=', null);
+
+        if ($visibility) {
+            $query->where('visibility_id', $visibility);
+        }
+        // Apply category filter
+        if ($request->has('category_id')) {
+            $query->where('project_category_id', $request->category_id);
+        }
+
+        // Apply search filter
+        if ($request->has('q')) {
+            $searchTerm = $request->q;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%")
+                    ->orWhereRaw("JSON_EXTRACT(description, '$.content') LIKE ?", ["%{$searchTerm}%"]);
+            });
+        }
+
+        if ($request->has('sort_by')) {
+            $sortBy = $request->input('sort_by');
+            $allowedSorts = ['updated_at', 'created_at', 'like_count', 'comment_count', 'title'];
+
+            if (!in_array($sortBy, $allowedSorts)) {
+                return ResponseHelper::errInput();
+            }
+
+            $order = $request->input('order', 'desc');
+            if (!in_array($order, ['asc', 'desc'])) {
+                return ResponseHelper::errInput();
+            }
+
+            if ($sortBy === 'like_count') {
+                $query->withCount('likes')
+                    ->orderBy('likes_count', $order);
+            } else if ($sortBy === 'comment_count') {
+                $query->withCount('comments')
+                    ->orderBy('comments_count', $order);
+            } else {
+                $query->orderBy($sortBy, $order);
+            }
+        } else {
+            $query->latest('updated_at');
+        }
+
+        $projects = $query->with(['steps'])->paginate(10);
+
+        return ResponseHelper::jsonWithData(200, 'Ongoing projects retrieved', new ProjectCollection($projects));
+    }
+
     public function getTrending(Request $request)
     {
         $query = Project::query();
@@ -143,14 +304,19 @@ class ProjectsController extends Controller
 
     public function getUserProjects(Request $request, User $user)
     {
+        $query = $user->projects()->where('visibility_id', 1);
+
         if ($request->has('q')) {
-            $projects = $user->projects()->where('title', 'like', "%{$request->input('q')}%")->latest()->paginate(10);
-            return ResponseHelper::jsonWithData(200, 'Projects retrieved',  new ProjectCollection($projects));
+            $query->where('title', 'like', "%{$request->input('q')}%");
         }
 
-        $projects = $user->projects()->latest()->paginate(10);
+        if ($request->has('category_id')) {
+            $query->where('project_category_id', $request->input('category_id'));
+        }
 
-        return ResponseHelper::jsonWithData(200, 'Projects retrieved',  new ProjectCollection($projects));
+        $projects = $query->latest()->paginate(10);
+
+        return ResponseHelper::jsonWithData(200, 'Projects retrieved', new ProjectCollection($projects));
     }
 
     public function getCurrentUserProjects(Request $request, int $visibility = null)

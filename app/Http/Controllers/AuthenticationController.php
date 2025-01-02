@@ -117,7 +117,8 @@ class AuthenticationController extends Controller
         $validate = Validator::make($request->all(), [
             'name' => 'required|max:255',
             'email' => 'required|email|max:255|unique:users',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
+            'role' => 'nullable|in:admin,user'
         ]);
 
         if ($validate->fails()) {
@@ -136,11 +137,19 @@ class AuthenticationController extends Controller
             ], 422);
         }
 
-        $user = User::create([
+        $user_data = [
             'name' => $request->input('name'),
             'email' => $request->input('email'),
             'password' => bcrypt($request->input('password'))
-        ]);
+        ];
+
+        if ($request->has('role')) {
+            $user_data['role'] = $request->input('role');
+        }
+
+        $user = User::create(
+            $user_data
+        );
 
         $token = $user->createToken('authToken')->plainTextToken;
 
