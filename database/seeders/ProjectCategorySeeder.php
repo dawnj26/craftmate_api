@@ -63,6 +63,7 @@ class ProjectCategorySeeder extends Seeder
             'Upcycling',
             'Recycling Crafts',
             'Digital Art',
+            'Other',
         ];
 
         foreach ($categories as $category) {

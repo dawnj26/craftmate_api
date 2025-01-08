@@ -12,8 +12,12 @@ use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
-    public function getUser(Request $request, User $user)
+
+
+    public function getUser(Request $request, int $user)
     {
+        $user = User::withTrashed()->find($user);
+
         return ResponseHelper::jsonWithData(200, 'User data retrieved successfully', new UserResource($user));
     }
 
@@ -58,5 +62,31 @@ class ProfileController extends Controller
 
         $profile->delete();
         return ResponseHelper::json(200, 'Profile deleted successfully');
+    }
+
+    public function toggleFollowUser(User $user)
+    {
+        $currentUser = auth()->user();
+
+        if ($user->trashed() || $currentUser->trashed()) {
+            return ResponseHelper::json(410, 'Unable to follow - User has been banned');
+        }
+
+        // Prevent self-following
+        if ($currentUser->id === $user->id) {
+            return ResponseHelper::json(400, 'You cannot follow yourself');
+        }
+
+        $message = '';
+        if ($user->isFollowedByUser($currentUser)) {
+            // Unfollow
+            $user->followers()->detach($currentUser->id);
+            $message = 'User unfollowed successfully';
+        } else {
+            // Follow
+            $user->followers()->attach($currentUser->id);
+            $message = 'User followed successfully';
+        }
+        return ResponseHelper::jsonWithData(200, $message, new UserResource($user));
     }
 }

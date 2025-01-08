@@ -6,21 +6,6 @@ volumes:
         driver: local
 
 services:
-    nginx:
-        image: nginx:alpine
-        container_name: nginx
-        restart: unless-stopped
-        tty: true
-        ports:
-            - "8001:8001"
-        volumes:
-            - ./:/var/www/app
-            - ./.nginx/default.conf:/etc/nginx/conf.d/default.conf
-        depends_on:
-            - php
-            - mariadb
-        networks:
-            - laravel
 
     mariadb:
         image: mariadb:latest
@@ -42,17 +27,18 @@ services:
             - laravel
 
     php:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: php
-        restart: unless-stopped
-        tty: true
-        working_dir: /var/www/app
+        image: shinsenter/laravel:latest
         volumes:
-            - ./:/var/www/app
+            - ./:/var/www/html
+        environment:
+            PHP_DISPLAY_ERRORS: "1"
+            PHP_POST_MAX_SIZE: "100M"
+            PHP_UPLOAD_MAX_FILESIZE: "100M"
+            PHP_SESSION_COOKIE_HTTPONLY: "1"
         ports:
-            - "9000:9000"
+            - "0.0.0.0:8000:80"
+            - "8001:443"
+            - "8002:443/udp"
         networks:
             - laravel
         depends_on:

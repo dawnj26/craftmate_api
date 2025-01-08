@@ -14,6 +14,7 @@ class Step extends Model
         'project_id',
         'content',
         'order',
+        'completed_at',
     ];
 
     protected $touches = ['project'];

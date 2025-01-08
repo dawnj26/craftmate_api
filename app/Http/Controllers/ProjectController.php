@@ -7,12 +7,39 @@ use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Models\Material;
 use App\Models\Tag;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
+    public function share(Request $request, Project $project)
+    {
+        return ResponseHelper::jsonWithData(200, 'Project fetched successfully', [
+            'share_link' => URL::to("/project/{$project->id}")
+        ]);
+    }
+
+    public function finish(Request $request, Project $project)
+    {
+        $project->completed_at = Carbon::now();
+        $project->save();
+
+        $project->load(['materials', 'steps', 'projectCategory']);
+        return ResponseHelper::jsonWithData(200, 'Finished successfully', new ProjectResource($project));
+    }
+
+    public function start(Request $request, Project $project)
+    {
+        $project->started_at = Carbon::now();
+        $project->save();
+
+        $project->load(['materials', 'steps', 'projectCategory']);
+        return ResponseHelper::jsonWithData(200, 'Started successfully', new ProjectResource($project));
+    }
+
     public function saveSuggestion(Request $request)
     {
         // 13 default category
@@ -34,6 +61,7 @@ class ProjectController extends Controller
                 'title' => $request->input('title'),
                 'description' => [['insert' => "$description\n"]],
                 'visibility_id' => 2,
+                'project_category_id' => 51,
             ]);
             foreach ($request->materials as $material) {
                 $project->materials()->create([
@@ -53,14 +81,13 @@ class ProjectController extends Controller
             DB::commit();
             $project->load('materials');
             return ResponseHelper::jsonWithData(201, 'Saved successfully', new ProjectResource($project));
-        } catch( \Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
 
             return ResponseHelper::json('500', $e->getMessage());
         }
-
     }
-    public function fork(Project $project)
+    public function fork(Request $request, Project $project)
     {
         $user = auth()->user();
 
@@ -80,7 +107,26 @@ class ProjectController extends Controller
             $forkedProject->steps()->save($clonedStep);
         }
 
-        return ResponseHelper::jsonWithData(200, 'Project forked successfully', ['projectId' => $forkedProject->id]);
+        foreach ($project->materials as $material) {
+            $forkedProject->materials()->save($material);
+        }
+
+        if ($request->has('start')) {
+            foreach ($project->usedMaterials as $material) {
+
+                $forkedProject->usedMaterials()->save($material, ['material_quantity' => $material->pivot->material_quantity]);
+            }
+            // Get materials that belong to current user
+            $userMaterials = $project->usedMaterials()
+                ->where('user_id', $user->id)
+                ->pluck('id');
+
+            // Detach only materials owned by user
+            $project->usedMaterials()->detach($userMaterials);
+        }
+
+
+        return ResponseHelper::jsonWithData(200, 'Project forked successfully', ['projectId' => $forkedProject->id, 'title' => $forkedProject->title]);
     }
 
     private function incrementView(Project $project)
@@ -126,7 +172,7 @@ class ProjectController extends Controller
         ]);
 
         if ($request->has('tags')) {
-            $tagNames = array_map('trim', explode(' ', $request->input('tags')));
+            $tagNames = array_map('trim', explode(',', $request->input('tags')));
             $tags = collect($tagNames)->map(function ($tagName) {
                 return Tag::firstOrCreate(['name' => $tagName]);
             });
@@ -223,6 +269,7 @@ class ProjectController extends Controller
             'title' => 'required',
             'tags' => 'nullable|string',
             'category' => 'required|integer',
+            'forkable' => 'required|boolean',
         ]);
 
         $user = auth()->user();
@@ -234,10 +281,11 @@ class ProjectController extends Controller
 
         $project->title = $request->input('title');
         $project->project_category_id = $request->input('category');
+        $project->forkable = $request->input('forkable');
         $project->save();
 
         if ($request->has('tags')) {
-            $tagNames = array_map('trim', explode(' ', $request->input('tags')));
+            $tagNames = array_map('trim', explode(',', $request->input('tags')));
             $tags = collect($tagNames)->map(function ($tagName) {
                 return Tag::firstOrCreate(['name' => $tagName]);
             });

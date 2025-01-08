@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Helpers\ResponseHelper\ResponseHelper;
 use App\Http\Resources\ProjectCollection;
 use App\Http\Resources\ProjectResource;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\User;
 
 class SearchController extends Controller
 {
@@ -87,11 +89,47 @@ class SearchController extends Controller
             })
             ->unique('value');
 
-        // Combine and limit to 5 total suggestions
+        // Get user suggestions
+        $userSuggestions = Project::where('visibility_id', 1)
+            ->whereHas('user', function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->whereNull('deleted_at');
+            })
+            ->with('user:id,name')
+            ->limit(5)
+            ->get()
+            ->map(function($project) {
+                return [
+                    'type' => 'user',
+                    'value' => strtolower($project->user->name)
+                ];
+            })
+            ->unique('value');
+
+        // Combine and limit to 10 total suggestions
         $suggestions = $titleSuggestions->concat($categorySuggestions)
                                       ->concat($tagSuggestions)
+                                      ->concat($userSuggestions)
                                       ->take(10);
 
         return ResponseHelper::jsonWithData(200, 'success', $suggestions);
+    }
+
+    public function searchUsers(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string',
+        ]);
+
+        $query = $request->input('query');
+
+        $users = User::where('name', 'like', "%{$query}%")
+            ->whereNull('deleted_at')
+            ->whereHas('projects', function($q) {
+                $q->where('visibility_id', 1);
+            })
+            ->get();
+
+        return ResponseHelper::jsonWithData(200, 'success', UserResource::collection($users));
     }
 }

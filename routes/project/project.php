@@ -5,6 +5,7 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\StepController;
 
 Route::prefix('project')->group(function () {
     Route::controller(ProjectController::class)->group(function () {
@@ -12,6 +13,10 @@ Route::prefix('project')->group(function () {
         Route::post('create', 'createProject')->middleware('auth:sanctum');
         Route::post('{project}/fork', 'fork')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::post('/suggestion/save', 'saveSuggestion')->middleware('auth:sanctum');
+        Route::post('{project}/start', 'start')->where('project', '[0-9]+')->middleware('auth:sanctum');
+
+        // put
+        Route::put('{project}/finish', 'finish')->where('project', '[0-9]+')->middleware('auth:sanctum');
 
         // edit
         Route::post('{project}/edit/description', 'updateDescription')->where('project', '[0-9]+')->middleware('auth:sanctum');
@@ -21,6 +26,7 @@ Route::prefix('project')->group(function () {
 
         // get
         Route::get('{project}', 'getProject')->where('project', '[0-9]+');
+        Route::get('{project}/share', 'share')->where('project', '[0-9]+')->middleware('auth:sanctum');
 
         // delete
         Route::delete('{project}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
@@ -42,4 +48,9 @@ Route::prefix('project')->group(function () {
         Route::post('{project}/comment/{comment}/reply', 'reply')->where('project', '[0-9]+')->middleware('auth:sanctum');
         Route::delete('comment/{comment}/delete', 'delete')->where('project', '[0-9]+')->middleware('auth:sanctum');
     });
+
+    Route::put('{project}/step/{step}/toggle-complete', [StepController::class, 'toggleComplete'])->where('project', '[0-9]+')->where('step', '[0-9]+')->middleware('auth:sanctum');
+    Route::put('{project}/steps/toggle-complete', [StepController::class, 'toggleCompleteAll'])->where('project', '[0-9]+')->middleware('auth:sanctum');
 });
+
+

@@ -26,7 +26,10 @@ class UserResource extends JsonResource
             'followerCount' => $this->followers()->count(),
             'followingCount' => $this->following()->count(),
             'projectCount' => $this->projects()->count(),
-            'isFollowed' => $user === null ? false : $this->isFollowedByUser($user),
+            'isFollowing' => $user === null ? false : $this->isFollowedByUser($user),
+            'createdAt' => $this->created_at,
+            'deletedAt' => $this->deleted_at,
+            'role' => $this->role,
         ];
     }
 }

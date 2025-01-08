@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ResponseHelper\ResponseHelper;
 use App\Http\Resources\MaterialCategoryResource;
 use App\Http\Resources\MaterialResource;
+use App\Http\Resources\UserResource;
 use App\Models\Material;
 use App\Models\MaterialCategory;
 use Illuminate\Http\Request;
@@ -30,6 +31,44 @@ class MaterialController extends Controller
         return ResponseHelper::jsonWithData(200, 'Materials deleted from project successfully', MaterialResource::collection($project->materials));
     }
 
+    public function deleteProjectUsedMaterials(Request $request, Project $project)
+    {
+        $validator = Validator::make($request->all(), [
+            'materials' => 'required|array',
+            'materials.*' => 'integer',
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseHelper::errInput();
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Get the materials that will be detached to access their pivot data
+            $materialsToDetach = $project->usedMaterials()
+                ->whereIn('material_id', $request->materials)
+                ->get();
+
+            // For each material, restore its quantity
+            foreach ($materialsToDetach as $material) {
+                $quantityToRestore = $material->pivot->material_quantity;
+                $material->increment('quantity', $quantityToRestore);
+            }
+
+            // Now detach the materials
+            $project->usedMaterials()->detach($request->materials);
+
+            DB::commit();
+            return ResponseHelper::jsonWithData(200, 'Materials deleted from project and quantities restored successfully',
+                MaterialResource::collection($project->usedMaterials));
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseHelper::json(500, $e->getMessage());
+        }
+    }
+
     public function addMaterialsToProject(Request $request, Project $project)
     {
         $validator = Validator::make($request->all(), [
@@ -46,7 +85,7 @@ class MaterialController extends Controller
         return ResponseHelper::jsonWithData(200, 'Materials added to project successfully', MaterialResource::collection($project->materials));
     }
 
-    public function saveMaterialsToProject(Request $request, Project $project)
+    public function addUsedMaterialsToProject(Request $request, Project $project)
     {
         $validator = Validator::make($request->all(), [
             'materials' => 'required|array',
@@ -56,10 +95,39 @@ class MaterialController extends Controller
         if ($validator->fails()) {
             return ResponseHelper::errInput();
         }
+
+        $materialsWithQuantities = [];
+
+        for ($i = 0; $i < count($request->materials); $i++) {
+            $id = $request->materials[$i];
+            $material = Material::findOrFail($id);
+            $materialsWithQuantities[$id] = ['material_quantity' => $material->quantity];
+        }
+
+        $project->usedMaterials()->attach($materialsWithQuantities);
+
+        return ResponseHelper::jsonWithData(200, 'Materials added to project successfully', MaterialResource::collection($project->usedMaterials));
+    }
+
+    public function saveMaterialsToProject(Request $request, Project $project)
+    {
+        $validator = Validator::make($request->all(), [
+            'materials' => 'array',
+            'materials.*' => 'integer',
+            'quantities' => 'array',
+            'quantities.*' => 'integer',
+        ]);
+
+        $materialsWithQuantities = [];
+
+        for ($i = 0; $i < count( $request->materials); $i++) {
+            $materialsWithQuantities[$request->materials[$i]] = ['material_quantity' => $request->quantities[$i]];
+        }
+
         try {
             DB::beginTransaction();
             $project->materials()->detach();
-            $project->materials()->attach($request->materials);
+            $project->materials()->attach($materialsWithQuantities);
             DB::commit();
 
             return ResponseHelper::jsonWithData(200, 'Materials added to project successfully', MaterialResource::collection($project->materials));
@@ -69,6 +137,67 @@ class MaterialController extends Controller
         }
     }
 
+    public function saveUsedMaterialsToProject(Request $request, Project $project)
+    {
+        $validator = Validator::make($request->all(), [
+            'materials' => 'array',
+            'materials.*' => 'integer',
+            'quantities' => 'array',
+            'quantities.*' => 'integer',
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseHelper::errInput();
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Get current used materials before detaching
+            $currentUsedMaterials = $project->usedMaterials()->get();
+
+            // Restore quantities for materials that will be removed
+            foreach ($currentUsedMaterials as $material) {
+                if (!in_array($material->id, $request->materials)) {
+                    $quantityToRestore = $material->pivot->material_quantity;
+                    $material->increment('quantity', $quantityToRestore);
+                }
+            }
+
+            // // First validate all quantities for new materials
+            // for ($i = 0; $i < count($request->materials); $i++) {
+            //     $material = Material::findOrFail($request->materials[$i]);
+            //     if ($material->quantity < $request->quantities[$i]) {
+            //         throw new \Exception("Insufficient quantity for material: {$material->name}");
+            //     }
+            // }
+
+            // Then process the materials
+            $materialsWithQuantities = [];
+            for ($i = 0; $i < count($request->materials); $i++) {
+                $materialId = $request->materials[$i];
+                $quantity = $request->quantities[$i];
+
+                // Decrease the material quantity
+                $material = Material::findOrFail($materialId);
+                $material->decrement('quantity', $quantity);
+
+                $materialsWithQuantities[$materialId] = ['material_quantity' => $quantity];
+            }
+
+            $project->usedMaterials()->detach();
+            $project->usedMaterials()->attach($materialsWithQuantities);
+
+            DB::commit();
+
+            return ResponseHelper::jsonWithData(200, 'Materials added and quantities updated successfully',
+                MaterialResource::collection($project->usedMaterials));
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseHelper::json(500, $e->getMessage());
+        }
+    }
 
 
     public function getProjectMaterials($project)
@@ -84,7 +213,54 @@ class MaterialController extends Controller
         return ResponseHelper::jsonWithData(
             200,
             'Materials fetched successfully',
-            MaterialResource::collection($materials),
+            $materials->map(function ($material) {
+                return [
+                    'id' => $material->id,
+                    'user' => UserResource::make($material->user),
+                    'name' => $material->name,
+                    'description' => $material->description,
+                    'materialCategory' => MaterialCategoryResource::make($material->category),
+                    'quantity' => $material->quantity,
+                    'imageUrl' => $material->image,
+                    'createdAt' => $material->created_at,
+                    'updatedAt' => $material->updated_at,
+
+                    'materialQuantity' => $material->pivot->material_quantity ?? 0
+
+                ];
+            }),
+        );
+    }
+
+    public function getProjectUsedMaterials($project)
+    {
+        $project = Project::find($project);
+
+        if (!$project) {
+            return ResponseHelper::json(404, 'Project not found');
+        }
+
+        $materials = $project->usedMaterials;
+
+        return ResponseHelper::jsonWithData(
+            200,
+            'Materials fetched successfully',
+            $materials->map(function ($material) {
+                return [
+                    'id' => $material->id,
+                    'user' => UserResource::make($material->user),
+                    'name' => $material->name,
+                    'description' => $material->description,
+                    'materialCategory' => MaterialCategoryResource::make($material->category),
+                    'quantity' => $material->quantity,
+                    'imageUrl' => $material->image,
+                    'createdAt' => $material->created_at,
+                    'updatedAt' => $material->updated_at,
+
+                    'materialQuantity' => $material->pivot->material_quantity ?? 0
+
+                ];
+            }),
         );
     }
 
