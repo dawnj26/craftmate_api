@@ -42,9 +42,31 @@ class MaterialController extends Controller
             return ResponseHelper::errInput();
         }
 
-        $project->usedMaterials()->detach($request->materials);
+        try {
+            DB::beginTransaction();
 
-        return ResponseHelper::jsonWithData(200, 'Materials deleted from project successfully', MaterialResource::collection($project->usedMaterials));
+            // Get the materials that will be detached to access their pivot data
+            $materialsToDetach = $project->usedMaterials()
+                ->whereIn('material_id', $request->materials)
+                ->get();
+
+            // For each material, restore its quantity
+            foreach ($materialsToDetach as $material) {
+                $quantityToRestore = $material->pivot->material_quantity;
+                $material->increment('quantity', $quantityToRestore);
+            }
+
+            // Now detach the materials
+            $project->usedMaterials()->detach($request->materials);
+
+            DB::commit();
+            return ResponseHelper::jsonWithData(200, 'Materials deleted from project and quantities restored successfully',
+                MaterialResource::collection($project->usedMaterials));
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ResponseHelper::json(500, $e->getMessage());
+        }
     }
 
     public function addMaterialsToProject(Request $request, Project $project)
@@ -131,13 +153,24 @@ class MaterialController extends Controller
         try {
             DB::beginTransaction();
 
-            // First validate all quantities
-            for ($i = 0; $i < count($request->materials); $i++) {
-                $material = Material::findOrFail($request->materials[$i]);
-                if ($material->quantity < $request->quantities[$i]) {
-                    throw new \Exception("Insufficient quantity for material: {$material->name}");
+            // Get current used materials before detaching
+            $currentUsedMaterials = $project->usedMaterials()->get();
+
+            // Restore quantities for materials that will be removed
+            foreach ($currentUsedMaterials as $material) {
+                if (!in_array($material->id, $request->materials)) {
+                    $quantityToRestore = $material->pivot->material_quantity;
+                    $material->increment('quantity', $quantityToRestore);
                 }
             }
+
+            // // First validate all quantities for new materials
+            // for ($i = 0; $i < count($request->materials); $i++) {
+            //     $material = Material::findOrFail($request->materials[$i]);
+            //     if ($material->quantity < $request->quantities[$i]) {
+            //         throw new \Exception("Insufficient quantity for material: {$material->name}");
+            //     }
+            // }
 
             // Then process the materials
             $materialsWithQuantities = [];

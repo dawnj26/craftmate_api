@@ -52,6 +52,7 @@
             height: 50px;
             border-radius: 50%;
             margin-right: 1rem;
+            object-fit: cover;
         }
 
         .testimonial .testimonial-author .author-info {
@@ -205,7 +206,7 @@
                                 pocket."</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="https://picsum.photos/200" alt="" />
+                            <img src="{{ asset('assets/images/girl1.jpg')}}" alt="" />
                             <div class="author-info">
                                 <h4>Sarah Johnson</h4>
                                 <p>Hobby Crafter</p>
@@ -220,7 +221,7 @@
                                 considered otherwise."</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="https://picsum.photos/201" alt="" />
+                            <img src="{{ asset('assets/images/man1.jpg')}}" alt="" />
                             <div class="author-info">
                                 <h4>Michael Chen</h4>
                                 <p>Professional Artist</p>
@@ -234,7 +235,7 @@
                                 confidently tackling complex projects. The video tutorials are especially helpful!"</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="https://picsum.photos/202" alt="" />
+                            <img src="{{ asset('assets/images/girl2.jpg')}}" alt="" />
                             <div class="author-info">
                                 <h4>Emily Rodriguez</h4>
                                 <p>DIY Enthusiast</p>
@@ -247,7 +248,7 @@
                                 encouragement, making the crafting journey so much more enjoyable and inspiring."</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="https://picsum.photos/203" alt="" />
+                            <img src="{{ asset('assets/images/man2.jpg')}}" alt="" />
                             <div class="author-info">
                                 <h4>Thomas Wilson</h4>
                                 <p>Crafting Blogger</p>
@@ -261,7 +262,7 @@
                                 ways to use materials I already have. It's both practical and inspiring!"</p>
                         </div>
                         <div class="testimonial-author">
-                            <img src="https://picsum.photos/204" alt="" />
+                            <img src="{{ asset('assets/images/girl3.jpg')}}" alt="" />
                             <div class="author-info">
                                 <h4>Lisa Parker</h4>
                                 <p>Sustainable Crafter</p>
